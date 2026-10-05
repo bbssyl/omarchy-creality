@@ -2,6 +2,8 @@
 
 An [Omarchy](https://omarchy.org/) bar widget for Creality 3D printers. A small printer mark sits in the bar: dimmed when idle, lit while the printer is calibrating or printing (with the percentage), and kept lit for a while after a print finishes. Click it for a panel with live camera video, state, progress with "Done at HH:MM", nozzle / bed / chamber temperatures, and Pause / Resume, Stop and Light controls. Inspired by [omarchy-bambu-lab](https://github.com/jankeesvw/omarchy-bambu-lab).
 
+![preview](preview.png)
+
 ## What it does
 
 - Finds your printer automatically on the local network. If exactly one is found it is selected for you; otherwise pick from a list or type an IP address.
