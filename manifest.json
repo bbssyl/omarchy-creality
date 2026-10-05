@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.bbssyl.creality",
+  "name": "Creality",
+  "version": "1.0.0",
+  "author": "Barış Benli",
+  "license": "MIT",
+  "description": "Creality 3D printer status in the bar: live camera, progress, temperatures and controls, found automatically on your LAN",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Creality",
+    "description": "Creality printer status with camera, progress, temperatures and pause/stop controls",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
