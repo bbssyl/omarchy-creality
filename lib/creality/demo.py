@@ -18,6 +18,7 @@ def frame(progress, light):
         "nozzle": {"cur": 218.4 if heating else 41.0, "target": 220.0 if heating else 0.0},
         "bed": {"cur": 60.1 if heating else 33.0, "target": 60.0 if heating else 0.0},
         "chamber": {"cur": 34.0}, "light": light, "error": None, "camera_url": None, "camera": None,
+        "thumbnail_url": None,
     }
 
 
