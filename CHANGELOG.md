@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.0] - 2026-10-09
+
+### Panel
+- Job thumbnail: the sliced model preview is fetched and shown next to the filename in the panel (Creality OS `/downloads/humbnail/<name>.png`; Moonraker `/server/files/metadata` thumbnails, best-effort).
+
 ## [1.0.0] - 2026-10-05
 
 Initial release.

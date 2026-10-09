@@ -29,6 +29,8 @@ Item {
   property string frameSource: ""
   property int frameCounter: 0
   property int snapshotFailures: 0
+  property string thumbnailSource: ""
+  property string thumbnailFetchedUrl: ""
   property string commandError: ""
   property bool installing: false
 
@@ -49,6 +51,16 @@ Item {
     return frameSource.length > 0 ? "ready" : "connecting"
   }
   readonly property bool showPercent: printState === "printing" || printState === "paused"
+  readonly property string currentThumbnailUrl: status.thumbnail_url || ""
+
+  onCurrentThumbnailUrlChanged: {
+    if (currentThumbnailUrl.length === 0) {
+      root.thumbnailSource = ""
+      root.thumbnailFetchedUrl = ""
+    } else if (popup.open) {
+      fetchThumbnail()
+    }
+  }
 
   function close() { popup.open = false }
   function open() {
@@ -58,6 +70,7 @@ Item {
     snapshotTimer.restart()
     sendCameraKeepalive()
     refreshFrame()
+    if (root.currentThumbnailUrl.length > 0) fetchThumbnail()
   }
   function toggle() { if (popup.open) close(); else open() }
   function triggerPress(button) { root.toggle() }
@@ -164,6 +177,15 @@ Item {
     snapshotProc.running = true
   }
 
+  function fetchThumbnail() {
+    var url = root.currentThumbnailUrl
+    if (!url || thumbnailProc.running || url === root.thumbnailFetchedUrl) return
+    root.thumbnailFetchedUrl = url
+    thumbnailProc.pendingPath = root.cacheDir + "/thumbnail.png"
+    thumbnailProc.command = ["/usr/bin/python3", root.bridgePath, "snapshot", url, thumbnailProc.pendingPath]
+    thumbnailProc.running = true
+  }
+
   Process {
     id: watchProc
     command: ["/usr/bin/python3", root.bridgePath, "watch"]
@@ -244,6 +266,18 @@ Item {
     }
   }
 
+  Process {
+    id: thumbnailProc
+    property string pendingPath: ""
+    onExited: function(code) {
+      if (code !== 0) {
+        root.thumbnailFetchedUrl = ""
+        return
+      }
+      root.thumbnailSource = "file://" + pendingPath + "?" + Date.now()
+    }
+  }
+
   Connections {
     target: popup
     function onOpenChanged() {
@@ -307,6 +341,7 @@ Item {
     found: root.found
     searching: root.searching
     frameSource: root.frameSource
+    thumbnailSource: root.thumbnailSource
     cameraState: root.cameraState
     installerAvailable: root.installerAvailable
     installing: root.installing

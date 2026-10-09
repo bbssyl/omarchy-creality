@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.bbssyl.creality",
   "name": "Creality",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Barış Benli",
   "license": "MIT",
   "description": "Creality 3D printer status in the bar: live camera, progress, temperatures and controls, found automatically on your LAN",

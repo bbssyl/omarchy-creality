@@ -10,6 +10,7 @@ KeyboardPanel {
   property var found: []
   property bool searching: false
   property string frameSource: ""
+  property string thumbnailSource: ""
   property string cameraState: "none"
   property string streamUrl: ""
   property bool installerAvailable: false
@@ -165,6 +166,7 @@ KeyboardPanel {
       visible: root.isDashboardVisible
       width: parent.width
       status: root.status
+      thumbnailSource: root.thumbnailSource
       fontFamily: root.fontFamily
     }
 

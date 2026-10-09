@@ -65,6 +65,8 @@ class MoonrakerAdapter:
         self.base = f"http://{config['ip']}:{int(config.get('http_port') or DEFAULT_PORT)}"
         self.identity = {}
         self.webcam_url = None
+        self.thumb_filename = None
+        self.thumb_url = None
 
     def get(self, path):
         return http_json(self.base + path)
@@ -88,11 +90,33 @@ class MoonrakerAdapter:
         parsed = urllib.parse.urlparse(url)
         return url if parsed.scheme in ("http", "https") and parsed.hostname == self.config["ip"] else None
 
+    def resolve_thumbnail(self, filename):
+        if not filename:
+            self.thumb_filename, self.thumb_url = None, None
+            return None
+        if filename == self.thumb_filename:
+            return self.thumb_url
+        self.thumb_filename, self.thumb_url = filename, None
+        try:
+            meta = self.get(f"/server/files/metadata?filename={urllib.parse.quote(filename)}")["result"]
+            thumbs = meta.get("thumbnails") or []
+            best = max(thumbs, key=lambda thumb: thumb.get("size") or 0, default=None)
+            relative = best.get("relative_path") if best else None
+            if relative:
+                directory = filename.rsplit("/", 1)[0] if "/" in filename else ""
+                full_path = f"{directory}/{relative}" if directory else relative
+                self.thumb_url = f"{self.base}/server/files/gcodes/{urllib.parse.quote(full_path)}"
+        except Exception:
+            pass
+        return self.thumb_url
+
     def status(self):
         if not self.identity:
             self.refresh_identity()
         result = self.get(f"/printer/objects/query?{OBJECTS}")["result"]["status"]
-        return normalize(result, self.identity, self.config, self.webcam_url)
+        normalized = normalize(result, self.identity, self.config, self.webcam_url)
+        normalized["thumbnail_url"] = self.resolve_thumbnail(normalized["file"])
+        return normalized
 
     def fetch_once(self):
         return self.status()

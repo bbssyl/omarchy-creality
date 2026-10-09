@@ -25,6 +25,7 @@ def offline_status(config):
         "error": None,
         "camera_url": None,
         "camera": None,
+        "thumbnail_url": None,
     }
 
 

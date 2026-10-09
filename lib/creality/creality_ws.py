@@ -1,6 +1,7 @@
 import json
 import socket
 import time
+import urllib.parse
 
 from .net import port_open
 from .model import eta_from_remaining, number_or_none, offline_status
@@ -84,6 +85,20 @@ def camera_descriptor(raw, host, camera_port, webrtc_forced):
     return {"kind": "snapshot", "url": f"http://{host}:{camera_port}/?action=snapshot"}
 
 
+def thumbnail_stem(filename):
+    base = base_name(filename)
+    if not base:
+        return None
+    return base[: -len(".gcode")] if base.lower().endswith(".gcode") else base
+
+
+def thumbnail_url(raw, host):
+    stem = thumbnail_stem(raw.get("printFileName"))
+    if not stem:
+        return None
+    return f"http://{host}/downloads/humbnail/{urllib.parse.quote(stem)}.png"
+
+
 def normalize(raw, host, camera_port=DEFAULT_CAMERA_PORT, webrtc_forced=False):
     state = derive_state(raw)
     remaining = int(number_or_none(raw.get("printLeftTime")) or 0)
@@ -109,6 +124,7 @@ def normalize(raw, host, camera_port=DEFAULT_CAMERA_PORT, webrtc_forced=False):
         "error": error_info(raw),
         "camera_url": camera_url(raw, host, camera_port) if not webrtc_forced else None,
         "camera": camera_descriptor(raw, host, camera_port, webrtc_forced),
+        "thumbnail_url": thumbnail_url(raw, host),
     }
 
 
