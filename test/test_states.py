@@ -6,10 +6,14 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
 
-from creality.creality_ws import derive_state, normalize, thumbnail_url
+from creality.creality_ws import KNOWN_STATUS_KEYS, CrealityWsAdapter, derive_state, normalize, thumbnail_url
 
 FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "k1max-job-start.log")
 JOB = {"printFileName": "/usr/data/printer_data/gcodes/part.gcode"}
+
+
+def build_adapter():
+    return CrealityWsAdapter({"ip": "192.0.2.1"})
 
 
 def replay_fixture():
@@ -88,6 +92,57 @@ class ThumbnailUrl(unittest.TestCase):
         raw = {"printFileName": "my model #2.gcode"}
 
         self.assertEqual(thumbnail_url(raw, "192.0.2.1"), "http://192.0.2.1/downloads/humbnail/my%20model%20%232.png")
+
+
+class HandleMessageAllowlist(unittest.TestCase):
+    def test_should_ignore_unknown_keys_and_report_no_change(self):
+        adapter = build_adapter()
+
+        changed = adapter.handle_message(None, json.dumps({"bogusKey": "x", "anotherJunk": 1}))
+
+        self.assertFalse(changed)
+        self.assertEqual(adapter.raw, {})
+
+    def test_should_retain_only_known_keys_from_mixed_payload(self):
+        adapter = build_adapter()
+
+        changed = adapter.handle_message(
+            None, json.dumps({"nozzleTemp": 42, "bogusKey": "x", "state": 1})
+        )
+
+        self.assertTrue(changed)
+        self.assertEqual(adapter.raw, {"nozzleTemp": 42, "state": 1})
+
+    def test_should_bound_retained_state_under_sustained_unknown_key_flood(self):
+        adapter = build_adapter()
+
+        for index in range(50):
+            adapter.handle_message(None, json.dumps({f"junkKey{index}": index}))
+
+        self.assertLessEqual(len(adapter.raw), len(KNOWN_STATUS_KEYS))
+        self.assertEqual(adapter.raw, {})
+
+    def test_should_still_populate_status_from_known_fields(self):
+        adapter = build_adapter()
+
+        changed = adapter.handle_message(
+            None,
+            json.dumps(
+                {
+                    **JOB,
+                    "state": 1,
+                    "printProgress": 50,
+                    "nozzleTemp": 210,
+                    "targetNozzleTemp": 215,
+                }
+            ),
+        )
+
+        self.assertTrue(changed)
+        status = adapter.status()
+        self.assertEqual(status["state"], "printing")
+        self.assertEqual(status["progress"], 50)
+        self.assertEqual(status["nozzle"], {"cur": 210, "target": 215})
 
 
 if __name__ == "__main__":

@@ -16,6 +16,27 @@ STATE_TRANSITIONS = {7: "stopping", 9: "starting"}
 MAX_BACKOFF_SECONDS = 15.0
 WEBRTC_PORT = 8000
 WEBRTC_SOURCE = "webrtc:http://{host}:" + str(WEBRTC_PORT) + "/call/webrtc_local#format=creality"
+KNOWN_STATUS_KEYS = frozenset({
+    "err",
+    "printFileName",
+    "withSelfTest",
+    "enableSelfTest",
+    "state",
+    "printProgress",
+    "pause",
+    "webrtcSupport",
+    "printLeftTime",
+    "boxTemp",
+    "lightSw",
+    "model",
+    "modelVersion",
+    "hostname",
+    "printJobTime",
+    "nozzleTemp",
+    "targetNozzleTemp",
+    "bedTemp0",
+    "targetBedTemp0",
+})
 
 
 def error_code(raw):
@@ -166,7 +187,10 @@ class CrealityWsAdapter:
         if payload.get("ModeCode") == "heart_beat":
             client.send_text("ok")
             return False
-        self.raw.update(payload)
+        known_updates = {key: value for key, value in payload.items() if key in KNOWN_STATUS_KEYS}
+        if not known_updates:
+            return False
+        self.raw.update(known_updates)
         return True
 
     def poll(self, client, on_update, stop):

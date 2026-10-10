@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.1] - 2026-10-10
+
+### Security
+- Bridge no longer retains arbitrary printer-reported JSON keys: `creality_ws` now merges only a fixed allowlist of fields the bridge actually reads into its persistent status dict, so a misbehaving or malicious printer sending a flood of distinct unknown keys can no longer grow the long-running bridge's memory unbounded.
+
 ## [1.1.0] - 2026-10-09
 
 ### Panel
