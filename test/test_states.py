@@ -2,11 +2,14 @@ import json
 import os
 import re
 import sys
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
 
 from creality.creality_ws import KNOWN_STATUS_KEYS, CrealityWsAdapter, derive_state, normalize, thumbnail_url
+from creality.moonraker import MAX_RESPONSE_BYTES, http_json
 
 FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "k1max-job-start.log")
 JOB = {"printFileName": "/usr/data/printer_data/gcodes/part.gcode"}
@@ -143,6 +146,67 @@ class HandleMessageAllowlist(unittest.TestCase):
         self.assertEqual(status["state"], "printing")
         self.assertEqual(status["progress"], 50)
         self.assertEqual(status["nozzle"], {"cur": 210, "target": 215})
+
+
+def build_static_body_handler(body):
+    class StaticBodyHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            if body:
+                self.wfile.write(body)
+
+        def log_message(self, *args):
+            return
+
+    return StaticBodyHandler
+
+
+def start_static_body_server(body):
+    server = HTTPServer(("127.0.0.1", 0), build_static_body_handler(body))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
+
+
+def stop_static_body_server(server):
+    server.shutdown()
+    server.server_close()
+
+
+def static_body_server_url(server):
+    return f"http://127.0.0.1:{server.server_address[1]}/"
+
+
+class HttpJsonResponseCap(unittest.TestCase):
+    def test_should_decode_response_at_or_under_cap(self):
+        server = start_static_body_server(json.dumps({"ok": True}).encode())
+
+        try:
+            result = http_json(static_body_server_url(server))
+        finally:
+            stop_static_body_server(server)
+
+        self.assertEqual(result, {"ok": True})
+
+    def test_should_raise_when_response_exceeds_cap(self):
+        server = start_static_body_server(b"0" * (MAX_RESPONSE_BYTES + 1024))
+
+        try:
+            with self.assertRaises(ValueError):
+                http_json(static_body_server_url(server))
+        finally:
+            stop_static_body_server(server)
+
+    def test_should_return_empty_dict_for_empty_body(self):
+        server = start_static_body_server(b"")
+
+        try:
+            result = http_json(static_body_server_url(server))
+        finally:
+            stop_static_body_server(server)
+
+        self.assertEqual(result, {})
 
 
 if __name__ == "__main__":

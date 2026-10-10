@@ -9,12 +9,16 @@ DEFAULT_PORT = 7125
 POLL_SECONDS = 2.0
 OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status&led"
 STATE_MAP = {"standby": "idle", "printing": "printing", "paused": "paused", "complete": "finished", "cancelled": "idle", "error": "error"}
+MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 
 
 def http_json(url, timeout=3.0, data=None):
     request = urllib.request.Request(url, data=b"" if data else None, method="POST" if data else "GET")
     with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode() or "{}")
+        body = response.read(MAX_RESPONSE_BYTES + 1)
+        if len(body) > MAX_RESPONSE_BYTES:
+            raise ValueError("response too large")
+        return json.loads(body.decode() or "{}")
 
 
 def remaining_seconds(stats, progress):

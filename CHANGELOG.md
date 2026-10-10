@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.2] - 2026-10-10
+
+### Security
+- Bridge no longer buffers an unbounded Moonraker HTTP response: `http_json` now caps the response body it reads (4 MiB, matching the existing WebSocket frame cap), so a faulty or malicious Moonraker endpoint — reachable both during normal polling and during automatic LAN discovery — can no longer stream an arbitrarily large response into the bridge's memory.
+
 ## [1.1.1] - 2026-10-10
 
 ### Security
